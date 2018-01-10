@@ -1,4 +1,4 @@
-A small Python module that allows you to train and use GloVe vectors (for more about GloVe, see https://nlp.stanford.edu/pubs/glove.pdf) in your Python appplications.
+A small Python module that allows you to train and use GloVe vectors in your Python appplications. For more about GloVe, see https://nlp.stanford.edu/pubs/glove.pdf
 
 eg
 
