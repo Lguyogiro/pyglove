@@ -11,7 +11,7 @@ eg
 ...           for word in sent.split()]
 
 >>> model = GloVe(tokens, 
-...               "20newsgroup_words.txt", # file where vectors 
+...               "20newsgroup_words.txt", # file where vectors will be stored
 ...               glove_installation_dir="/path/to/glove/install", 
 ...               vocab_min_count=5, 
 ...               vector_size=50, 
