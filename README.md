@@ -13,7 +13,7 @@ eg
 >>> model = GloVe(sentences, vector_file_name, glove_installation_dir=glove_pth, 
                   vocab_min_count=5, vector_size=50, window_size=15)
               
->>> model.most_similar("Camry", n=3)
+>>> model.most_similar("Camry", n=1)
 [('Toyota', 0.69786818922200133)]
 
 ```
