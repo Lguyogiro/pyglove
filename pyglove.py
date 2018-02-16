@@ -16,7 +16,8 @@ class GloVe(object):
     def __init__(self, data, output_file, glove_installation_dir='',
                  tmp_data_loc="pyglove_tmp", verbose=2, memory=4.0,
                  vocab_min_count=5, vector_size=50, max_iter=15, window_size=15,
-                 binary=2, num_threads=8, x_max=10, run=True):
+                 binary=2, num_threads=8, x_max=10, run=True,
+                 padding_token='`'):
         """
 
         Parameters
@@ -59,11 +60,16 @@ class GloVe(object):
 
         run: bool
             Whether or not to build the vectors on initialization.
+
+        padding_token: str
+            Token to be used for padding sentences. Will be excluded from
+            to results.
         """
-        logging.basicConfig(format=('%(asctime)s - %(name)s - %(levelname)s - ' +
-                                    '%(message)s'), level=logging.INFO)
+        logging.basicConfig(format=('%(asctime)s - %(name)s - '
+                                    '%(levelname)s - %(message)s'),
+                            level=logging.INFO)
         self.logger = logging.getLogger(__name__)
-        self.data = data  # iterable of tokens
+        self.data = data  # iterable of sentence
         self.build_dir = path.join(glove_installation_dir, "build")
         self.data_location = tmp_data_loc
         makedirs(self.data_location, exist_ok=True)
@@ -75,7 +81,8 @@ class GloVe(object):
 
         self.vocab_loc = path.join(self.data_location, "vocab.txt")
         self.coocurrence_loc = path.join(self.data_location, "coocurrence.bin")
-        self.coocurrence_shuf_loc = path.join(self.data_location, "coocurrence.shuf.bin")
+        self.coocurrence_shuf_loc = path.join(self.data_location,
+                                              "coocurrence.shuf.bin")
         self.verbose = verbose
         self.memory = memory
         self.min_count = vocab_min_count
@@ -86,10 +93,10 @@ class GloVe(object):
         self.x_max = x_max
         self.vector_size = vector_size
         self.vectors = {}
-
         self.vector_file = (output_file
                             if output_file.endswith(".txt")
                             else output_file + ".txt")
+        self.padding_token = padding_token
 
         if run == True:
             # Build Vectors
@@ -98,8 +105,8 @@ class GloVe(object):
     @classmethod
     def load_from_vector_file(cls, filename):
         """
-        Alternate constructor. Load word vectors from a file containing one token and its
-        vector (separated by a space) per line.
+        Alternate constructor. Load word vectors from a file containing one
+        token and its vector (separated by a space) per line.
 
         Parameters
         ----------
@@ -123,47 +130,64 @@ class GloVe(object):
     def _write_tmp_data_file(self):
         """Writes temporary data files for GloVe to use."""
         with open(self.corpus_loc, 'w') as fout:
-            for token in self.data:
-                fout.write("{} ".format(token))
+            for sentence in self.data:
+                pads = [self.padding_token] * self.window_size
+                padded = pads + sentence + pads
+                for token in padded:
+                    fout.write("{} ".format(token))
 
     def _clean_tmp_dir(self):
         """Remove temporary data files"""
-        for intermediate_file in (self.vocab_loc, self.corpus_loc,
-                                  self.coocurrence_loc, self.coocurrence_shuf_loc):
+        for intermediate_file in (self.vocab_loc,
+                                  self.corpus_loc,
+                                  self.coocurrence_loc,
+                                  self.coocurrence_shuf_loc):
             remove(intermediate_file)
 
     def _build_vocab(self):
         check_call("{build}/vocab_count -min-count {vocab_min_count} "
                    "-verbose {verbose} < {corpus} > {vocab_file}"
-                   .format(build=self.build_dir, vocab_min_count=self.min_count,
+                   .format(build=self.build_dir,
+                           vocab_min_count=self.min_count,
                            verbose=self.verbose, corpus=self.corpus_loc,
                            vocab_file=self.vocab_loc), shell=True)
 
     def _build_coocurrences(self):
-        check_call("{build}/cooccur -memory {memory} -vocab-file {vocab_file} -verbose "
-                   "{verbose} -window-size {window_size} < {corpus} > {coocurrence_file}"
-                   .format(build=self.build_dir, memory=self.memory,
-                           vocab_file=self.vocab_loc, verbose=self.verbose,
-                           window_size=self.window_size, corpus=self.corpus_loc,
-                           coocurrence_file=self.coocurrence_loc), shell=True)
+        check_call("{build}/cooccur -memory {memory} -vocab-file {vocab_file} "
+                   "-verbose {verbose} -window-size {window_size} < {corpus} "
+                   "> {coocurrence_file}"
+                   .format(build=self.build_dir,
+                           memory=self.memory,
+                           vocab_file=self.vocab_loc,
+                           verbose=self.verbose,
+                           window_size=self.window_size,
+                           corpus=self.corpus_loc,
+                           coocurrence_file=self.coocurrence_loc),
+                   shell=True)
 
     def _shuffle_coocurrences(self):
         check_call("{build}/shuffle -memory {memory} -verbose {verbose} < "
                    "{cooc_file} > {cooc_shuf}"
                    .format(build=self.build_dir, memory=self.memory,
-                           verbose=self.verbose, cooc_file=self.coocurrence_loc,
-                           cooc_shuf=self.coocurrence_shuf_loc), shell=True)
+                           verbose=self.verbose,
+                           cooc_file=self.coocurrence_loc,
+                           cooc_shuf=self.coocurrence_shuf_loc),
+                   shell=True)
 
     def _build_vectors(self, vector_size, outfile):
         check_call("{build}/glove -save-file {outfile} -threads {threads} "
                    "-input-file {cooc_shuf} -x-max {xmax} -iter {maxiter} "
-                   "-vector-size {vector_size} -binary {binary} -vocab-file {vocab_file} "
-                   "-verbose {verbose}"
+                   "-vector-size {vector_size} -binary {binary} -vocab-file "
+                   "{vocab_file} -verbose {verbose}"
                    .format(build=self.build_dir, outfile=outfile.split('.')[0],
-                           threads=self.num_threads, cooc_shuf=self.coocurrence_shuf_loc,
+                           threads=self.num_threads,
+                           cooc_shuf=self.coocurrence_shuf_loc,
                            xmax=self.x_max, maxiter=self.max_iter,
-                           vector_size=vector_size, binary=self.binary,
-                           vocab_file=self.vocab_loc, verbose=self.verbose), shell=True)
+                           vector_size=vector_size,
+                           binary=self.binary,
+                           vocab_file=self.vocab_loc,
+                           verbose=self.verbose),
+                   shell=True)
 
     def _run(self, vector_size, output_file):
         """
@@ -191,8 +215,8 @@ class GloVe(object):
 
     def _load_vectors(self, vector_file):
         """
-        Loads word vectors from a txt file containing one word and its corresponding
-        vector (space-separated) per line.
+        Loads word vectors from a txt file containing one word and its
+        corresponding vector (space-separated) per line.
 
         Parameters
         ----------
@@ -207,11 +231,14 @@ class GloVe(object):
         with open(vector_file) as f:
             for line in f:
                 token, vector = line.split(' ', 1)
-                self.vectors[token] = np.array([float(d) for d in vector.split() if d])
+                self.vectors[token] = np.array([float(d) for d
+                                                in vector.split() if d])
+                del self.vectors[self.padding_token]
 
     def most_similar(self, token, n=10):
         """
-        Given a token, generate tokens that are most similar to it in the current model.
+        Given a token, generate tokens that are most similar to it in the
+        current model.
 
         Parameters
         ----------
@@ -228,5 +255,6 @@ class GloVe(object):
 
         """
         vec = self.vectors[token]
-        return sorted([(t, 1 - cosine(vec, v)) for t, v in  self.vectors.items() if t != token],
+        return sorted([(t, 1 - cosine(vec, v)) for t, v
+                       in  self.vectors.items() if t != token],
                       key=lambda tup: tup[1], reverse=True)[:n]
