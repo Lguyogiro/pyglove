@@ -1,4 +1,4 @@
-A small Python module that allows you to train and use GloVe vectors (for more about GloVe, see https://nlp.stanford.edu/pubs/glove.pdf) in your Python appplications.
+A small Python module that allows you to train and use GloVe vectors in your Python appplications. For more about GloVe, see https://nlp.stanford.edu/pubs/glove.pdf
 
 eg
 
@@ -7,7 +7,6 @@ eg
 >>> from sklearn.datasets import fetch_20newsgroups
 
 >>> sentences = [sentence.split() for sentence in fetch_20newsgroups()['data']]
-
 >>> glove_pth = "/path/to/glove/install"
 >>> vector_file_name = "20newsgroup_words.txt"  # file where vectors will be stored
 
