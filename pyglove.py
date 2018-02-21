@@ -131,7 +131,7 @@ class GloVe(object):
         """Writes temporary data files for GloVe to use."""
         with open(self.corpus_loc, 'w') as fout:
             for sentence in self.data:
-                pads = [self.padding_token] * self.window_size
+                pads = [self.padding_token] * (self.window_size - 1)
                 padded = pads + sentence + pads
                 for token in padded:
                     fout.write("{} ".format(token))
@@ -233,7 +233,7 @@ class GloVe(object):
                 token, vector = line.split(' ', 1)
                 self.vectors[token] = np.array([float(d) for d
                                                 in vector.split() if d])
-                del self.vectors[self.padding_token]
+        del self.vectors[self.padding_token]
 
     def most_similar(self, token, n=10):
         """
