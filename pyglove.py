@@ -134,6 +134,8 @@ class GloVe(object):
                 pads = [self.padding_token] * (self.window_size - 1)
                 padded = pads + sentence + pads
                 for token in padded:
+                    if token == "<unk>":
+                        continue
                     fout.write("{} ".format(token))
 
     def _clean_tmp_dir(self):
