@@ -237,7 +237,8 @@ class GloVe(object):
                 token, vector = line.split(' ', 1)
                 self.vectors[token] = np.array([float(d) for d
                                                 in vector.split() if d])
-        del self.vectors[self.padding_token]
+        if self.padding_token is not None:
+            del self.vectors[self.padding_token]
 
     def most_similar(self, token, n=10):
         """
