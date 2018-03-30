@@ -22,10 +22,8 @@ class GloVe(object):
 
         Parameters
         ----------
-        data: str or list
-            Either the full path to a corpus file with a single line, with each token
-            separated by a space, or an iterable of tokens in order (eg ["the", "dog",
-            "ran", "I", "saw", "it"]).
+        data: list of lists of str
+            List of sentences, where each sentence is a list of tokens.
 
         output_file: str
             Full path to the output file that will store the vectors, with one word and
@@ -75,10 +73,7 @@ class GloVe(object):
         self.data_location = tmp_data_loc
         makedirs(self.data_location, exist_ok=True)
 
-        if isinstance(data, str):  # `data` is a filepath
-            self.corpus_loc = data
-        else:
-            self.corpus_loc = path.join(self.data_location, "corpus.tmp")
+        self.corpus_loc = path.join(self.data_location, "corpus.tmp")
 
         self.vocab_loc = path.join(self.data_location, "vocab.txt")
         self.coocurrence_loc = path.join(self.data_location, "coocurrence.bin")
@@ -210,6 +205,7 @@ class GloVe(object):
         None
 
         """
+        
         self._write_tmp_data_file()
         self._build_vocab()
         self._build_coocurrences()
