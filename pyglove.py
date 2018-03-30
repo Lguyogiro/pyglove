@@ -61,9 +61,10 @@ class GloVe(object):
         run: bool
             Whether or not to build the vectors on initialization.
 
-        padding_token: str
+        padding_token: str or None
             Token to be used for padding sentences. Will be excluded from
-            to results.
+            to results. If None, no padding will be added and contexts will
+            span sentence boundaries. (like the original GloVe examples).
         """
         logging.basicConfig(format=('%(asctime)s - %(name)s - '
                                     '%(levelname)s - %(message)s'),
@@ -131,9 +132,10 @@ class GloVe(object):
         """Writes temporary data files for GloVe to use."""
         with open(self.corpus_loc, 'w') as fout:
             for sentence in self.data:
-                pads = [self.padding_token] * (self.window_size - 1)
-                padded = pads + sentence + pads
-                for token in padded:
+                if self.padding_token is not None:
+                    pads = [self.padding_token] * (self.window_size - 1)
+                    sentence = pads + sentence + pads
+                for token in sentence:
                     if token == "<unk>":
                         continue
                     fout.write("{} ".format(token))
